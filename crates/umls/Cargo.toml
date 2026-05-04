@@ -1,0 +1,38 @@
+[package]
+name = "umls"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+
+[lints.rust]
+missing_docs = "warn"
+
+[lints.clippy]
+missing_docs_in_private_items = "warn"
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+
+[features]
+default = []
+debug_path = [
+  "dep:serde_path_to_error"
+]
+
+[dependencies]
+thiserror = "2"
+tokio = "1"
+csv-async = { version = "1", features = ["tokio"] }
+futures = "0.3"
+async-stream = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_path_to_error = { version = "0.1", optional = true }
+
+[dev-dependencies]
+clap = { version = "4", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
