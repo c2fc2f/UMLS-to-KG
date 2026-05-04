@@ -3,8 +3,6 @@
 //! This module defines [`UMLSError`], which encapsulates all possible
 //! failures that can occur when parsing dataset information.
 
-use std::io;
-
 use thiserror::Error;
 
 #[cfg(feature = "debug_path")]
@@ -23,10 +21,24 @@ pub enum UMLSError {
     /// This variant wraps failures from the [`csv_async`] deserializer,
     /// such as malformed CSV syntax, unexpected fields, or data that
     /// does not conform to the expected UMLS schema.
-    #[error("CSV parsing failed: {0}")]
-    Parsing(#[from] ParseError),
+    #[error("CSV parsing failed in {file}: {source}")]
+    Parsing {
+        /// File where the error occurred
+        file: &'static str,
+
+        /// Source error
+        #[source]
+        source: ParseError,
+    },
 
     /// A low-level I/O error occurred during file operations.
-    #[error("I/O error encountered: {0}")]
-    IO(#[from] io::Error),
+    #[error("I/O error encountered in {file}: {source}")]
+    IO {
+        /// File where the error occurred
+        file: &'static str,
+
+        /// Source error
+        #[source]
+        source: std::io::Error,
+    },
 }

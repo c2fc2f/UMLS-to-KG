@@ -128,26 +128,39 @@ pub struct UMLS {
 macro_rules! rrf_stream_method {
     ($method:ident, $record:ty, $filename:literal) => {
         #[doc = concat!(
-                    "Returns a stream of [`",
-                    stringify!($record),
-                    "`] entries from the `",
-                    $filename,
-                    "` file.\n\n",
-                    "This allows for flexible, lazy processing of the dataset. Each item in ",
-                    "the stream is a [`Result`], ensuring that I/O or parsing errors ",
-                    "encountered during streaming are handled gracefully.",
-                )]
+            "Returns a stream of [`",
+            stringify!($record),
+            "`] entries from the `",
+            $filename,
+            "` file.\n\n",
+            "This allows for flexible, lazy processing of the dataset. Each item in ",
+            "the stream is a [`Result`], ensuring that I/O or parsing errors ",
+            "encountered during streaming are handled gracefully."
+        )]
         pub fn $method(&self) -> BoxStream<'_, Result<$record, UMLSError>> {
             try_stream! {
                 let path = self.folder.join($filename);
-                let file = File::open(&path).await.map_err(UMLSError::IO)?;
+                let file = File::open(&path).await.map_err(|e| {
+                    UMLSError::IO {
+                        file: $filename,
+                        source: e,
+                    }
+                })?;
+
                 let mut reader = AsyncReaderBuilder::new()
                     .delimiter(b'|')
                     .has_headers(false)
                     .create_deserializer(file);
+
                 let mut stream = reader.deserialize::<$record>();
+
                 while let Some(result) = stream.next().await {
-                    let record = result.map_err(UMLSError::Parsing)?;
+                    let record = result.map_err(|e| {
+                        UMLSError::Parsing {
+                            file: $filename,
+                            source: e,
+                        }
+                    })?;
                     yield record;
                 }
             }
@@ -172,3 +185,4 @@ impl UMLS {
     rrf_stream_method!(semantic_types, SemanticTypeRecord, "MRSTY.RRF");
     rrf_stream_method!(related_concepts, RelatedConceptRecord, "MRREL.RRF");
 }
+

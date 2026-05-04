@@ -20,10 +20,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let umls: UMLS = UMLS::new(args.folder);
 
-    while let Some(record) = umls.concept_names_and_sources().next().await {
+    let mut stream = umls.concept_names_and_sources();
+
+    while let Some(record) = stream.next().await {
         let record: CoNSoRecord = record?;
 
-        println!("CUI: {}", record.cui);
+        println!("CUI: {} AUI: {}", record.cui, record.aui);
     }
 
     Ok(())
