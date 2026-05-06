@@ -52,10 +52,10 @@ umls_2026/
 │   └── MRREL.RRF     ← inter-concept relationships
 └── NET/
     ├── SRDEF         ← semantic types and relations
-    └── SRSTRE1       ← set of relations
+    └── SRSTRE1       ← semantic network relationships
 ```
 
-Access to UMLS data requires a [UMLS Metathesaurus License](https://www.nlm.nih.gov/research/umls/licensing_authentication/index.html).
+Access to UMLS data requires a [UMLS Metathesaurus License](https://www.nlm.nih.gov/research/umls/index.html).
 
 ## Usage
 
