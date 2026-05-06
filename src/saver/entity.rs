@@ -1,6 +1,6 @@
 //! Module of a Saver which save every entity
 
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use fxhash::FxHashSet;
 use umls::metathesaurus::conso::models::{CoNSoRecord, StringType, TermStatus};
@@ -15,7 +15,7 @@ pub struct EntitySaver {
     /// CSV Writer for Lexical Nodes
     lexicals: Writer,
     /// CSV Writer for String Nodes
-    string: Writer,
+    strings: Writer,
     /// CSV Writer for Atom Nodes
     atoms: Writer,
 
@@ -27,11 +27,15 @@ pub struct EntitySaver {
     is_lexical_of: Writer,
 
     /// Set of the ID of saved Concept node
-    cuis: FxHashSet<String>,
+    cuis: FxHashSet<Arc<String>>,
     /// Set of the ID of saved Lexical node
-    luis: FxHashSet<String>,
+    luis: FxHashSet<Arc<String>>,
     /// Set of the ID of saved String node
-    suis: FxHashSet<String>,
+    suis: FxHashSet<Arc<String>>,
+    /// Set of the pair ID of saved IS_STRING_OF relation
+    string_ofs: FxHashSet<(Arc<String>, Arc<String>)>,
+    /// Set of the pair ID of saved IS_LEXICAL_OF relation
+    lexical_ofs: FxHashSet<(Arc<String>, Arc<String>)>,
 }
 
 impl EntitySaver {
@@ -48,7 +52,7 @@ impl EntitySaver {
                 "UMLSLexical",
                 ["ui:ID(UMLSMetathesaurus)",]
             ),
-            string: writer!(dir, "UMLSString", ["ui:ID(UMLSMetathesaurus)",]),
+            strings: writer!(dir, "UMLSString", ["ui:ID(UMLSMetathesaurus)",]),
             atoms: writer!(
                 dir,
                 "UMLSAtom",
@@ -92,6 +96,8 @@ impl EntitySaver {
             cuis: FxHashSet::default(),
             luis: FxHashSet::default(),
             suis: FxHashSet::default(),
+            string_ofs: FxHashSet::default(),
+            lexical_ofs: FxHashSet::default(),
         })
     }
 
@@ -99,7 +105,7 @@ impl EntitySaver {
     pub async fn flush(mut self) -> std::io::Result<()> {
         self.concepts.flush()?;
         self.lexicals.flush()?;
-        self.string.flush()?;
+        self.strings.flush()?;
         self.atoms.flush()?;
         self.is_atom_of.flush()?;
         self.is_string_of.flush()?;
@@ -113,6 +119,10 @@ impl EntitySaver {
         &mut self,
         record: CoNSoRecord,
     ) -> std::io::Result<()> {
+        let sui: Arc<String> = Arc::new(record.sui);
+        let lui: Arc<String> = Arc::new(record.lui);
+        let cui: Arc<String> = Arc::new(record.cui);
+
         self.is_atom_of.write_record([
             record.aui.as_str(),
             if matches!(record.stt, StringType::PreferredForm) {
@@ -120,38 +130,50 @@ impl EntitySaver {
             } else {
                 "false"
             },
-            record.sui.as_str(),
+            sui.as_str(),
         ])?;
 
-        self.is_string_of.write_record([
-            record.sui.as_str(),
-            if matches!(record.ts, TermStatus::Preferred) {
-                "true"
-            } else {
-                "false"
-            },
-            record.lui.as_str(),
-        ])?;
+        let e: (Arc<String>, Arc<String>) =
+            (Arc::clone(&sui), Arc::clone(&lui));
 
-        self.is_lexical_of.write_record([
-            record.lui.as_str(),
-            if record.is_pref { "true" } else { "false" },
-            record.cui.as_str(),
-        ])?;
-
-        if !self.cuis.contains(&record.cui) {
-            self.concepts.write_record([&record.cui])?;
-            self.cuis.insert(record.cui);
+        if !self.string_ofs.contains(&e) {
+            self.is_string_of.write_record([
+                sui.as_str(),
+                if matches!(record.ts, TermStatus::Preferred) {
+                    "true"
+                } else {
+                    "false"
+                },
+                lui.as_str(),
+            ])?;
+            self.string_ofs.insert(e);
         }
 
-        if !self.luis.contains(&record.lui) {
-            self.lexicals.write_record([&record.lui])?;
-            self.luis.insert(record.lui);
+        let e: (Arc<String>, Arc<String>) =
+            (Arc::clone(&lui), Arc::clone(&cui));
+
+        if !self.lexical_ofs.contains(&e) {
+            self.is_lexical_of.write_record([
+                lui.as_str(),
+                if record.is_pref { "true" } else { "false" },
+                cui.as_str(),
+            ])?;
+            self.lexical_ofs.insert(e);
         }
 
-        if !self.suis.contains(&record.sui) {
-            self.string.write_record([&record.sui])?;
-            self.suis.insert(record.sui);
+        if !self.cuis.contains(&cui) {
+            self.concepts.write_record([cui.as_str()])?;
+            self.cuis.insert(cui);
+        }
+
+        if !self.luis.contains(&lui) {
+            self.lexicals.write_record([lui.as_str()])?;
+            self.luis.insert(lui);
+        }
+
+        if !self.suis.contains(&sui) {
+            self.strings.write_record([sui.as_str()])?;
+            self.suis.insert(sui);
         }
 
         self.atoms.write_record([
