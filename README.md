@@ -1,2 +1,90 @@
 # UMLS-to-KG
 CLI tool that converts the UMLS dataset into a CSV-based Knowledge Graph representation (Neo4J)
+
+```bash
+sudo JDK_JAVA_OPTIONS="--add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED" \
+  neo4j-admin database import full neo4j \
+    --verbose \
+    --overwrite-destination \
+    --relationships=BROADER_THAN=./BROADER_THAN.csv \
+    --relationships=CHILD_OF=./CHILD_OF.csv \
+    --relationships=DELETED=./DELETED.csv \
+    --relationships=HAS_ALLOWED_QUALIFIER=./HAS_ALLOWED_QUALIFIER.csv \
+    --relationships=HAS_DEFINITION=./HAS_DEFINITION.csv \
+    --relationships=HAS_OTHER_RELATIONSHIP=./HAS_OTHER_RELATIONSHIP.csv \
+    --relationships=HAS_SEMANTIC_TYPE=./HAS_SEMANTIC_TYPE.csv \
+    --relationships=IS_ATOM_OF=./IS_ATOM_OF.csv \
+    --relationships=IS_LEXICAL_OF=./IS_LEXICAL_OF.csv \
+    --relationships=IS_STRING_OF=./IS_STRING_OF.csv \
+    --relationships=NARROWER_THAN=./NARROWER_THAN.csv \
+    --relationships=NOT_RELATED_TO=./NOT_RELATED_TO.csv \
+    --relationships=PARENT_OF=./PARENT_OF.csv \
+    --relationships=POSSIBLY_SYNONYM_OF=./POSSIBLY_SYNONYM_OF.csv \
+    --relationships=QUALIFIED_BY=./QUALIFIED_BY.csv \
+    --relationships=RELATED_TO=./RELATED_TO.csv \
+    --relationships=SIMILAR_TO=./SIMILAR_TO.csv \
+    --relationships=ADJACENT_TO=./SN-ADJACENT_TO.csv \
+    --relationships=AFFECTS=./SN-AFFECTS.csv \
+    --relationships=ANALYZES=./SN-ANALYZES.csv \
+    --relationships=ASSESSES_EFFECT_OF=./SN-ASSESSES_EFFECT_OF.csv \
+    --relationships=ASSOCIATED_WITH=./SN-ASSOCIATED_WITH.csv \
+    --relationships=BRANCH_OF=./SN-BRANCH_OF.csv \
+    --relationships=BRINGS_ABOUT=./SN-BRINGS_ABOUT.csv \
+    --relationships=CARRIES_OUT=./SN-CARRIES_OUT.csv \
+    --relationships=CAUSES=./SN-CAUSES.csv \
+    --relationships=CO_OCCURS_WITH=./SN-CO_OCCURS_WITH.csv \
+    --relationships=COMPLICATES=./SN-COMPLICATES.csv \
+    --relationships=CONCEPTUAL_PART_OF=./SN-CONCEPTUAL_PART_OF.csv \
+    --relationships=CONCEPTUALLY_RELATED_TO=./SN-CONCEPTUALLY_RELATED_TO.csv \
+    --relationships=CONNECTED_TO=./SN-CONNECTED_TO.csv \
+    --relationships=CONSISTS_OF=./SN-CONSISTS_OF.csv \
+    --relationships=CONTAINS=./SN-CONTAINS.csv \
+    --relationships=DEGREE_OF=./SN-DEGREE_OF.csv \
+    --relationships=DERIVATIVE_OF=./SN-DERIVATIVE_OF.csv \
+    --relationships=DEVELOPMENTAL_FORM_OF=./SN-DEVELOPMENTAL_FORM_OF.csv \
+    --relationships=DIAGNOSES=./SN-DIAGNOSES.csv \
+    --relationships=DISRUPTS=./SN-DISRUPTS.csv \
+    --relationships=EVALUATION_OF=./SN-EVALUATION_OF.csv \
+    --relationships=EXHIBITS=./SN-EXHIBITS.csv \
+    --relationships=FUNCTIONALLY_RELATED_TO=./SN-FUNCTIONALLY_RELATED_TO.csv \
+    --relationships=INDICATES=./SN-INDICATES.csv \
+    --relationships=INGREDIENT_OF=./SN-INGREDIENT_OF.csv \
+    --relationships=INTERACTS_WITH=./SN-INTERACTS_WITH.csv \
+    --relationships=INTERCONNECTS=./SN-INTERCONNECTS.csv \
+    --relationships=IS_A=./SN-IS_A.csv \
+    --relationships=ISSUE_IN=./SN-ISSUE_IN.csv \
+    --relationships=LOCATION_OF=./SN-LOCATION_OF.csv \
+    --relationships=MANAGES=./SN-MANAGES.csv \
+    --relationships=MANIFESTATION_OF=./SN-MANIFESTATION_OF.csv \
+    --relationships=MEASUREMENT_OF=./SN-MEASUREMENT_OF.csv \
+    --relationships=MEASURES=./SN-MEASURES.csv \
+    --relationships=METHOD_OF=./SN-METHOD_OF.csv \
+    --relationships=OCCURS_IN=./SN-OCCURS_IN.csv \
+    --relationships=PART_OF=./SN-PART_OF.csv \
+    --relationships=PERFORMS=./SN-PERFORMS.csv \
+    --relationships=PHYSICALLY_RELATED_TO=./SN-PHYSICALLY_RELATED_TO.csv \
+    --relationships=PRACTICES=./SN-PRACTICES.csv \
+    --relationships=PRECEDES=./SN-PRECEDES.csv \
+    --relationships=PREVENTS=./SN-PREVENTS.csv \
+    --relationships=PROCESS_OF=./SN-PROCESS_OF.csv \
+    --relationships=PRODUCES=./SN-PRODUCES.csv \
+    --relationships=PROPERTY_OF=./SN-PROPERTY_OF.csv \
+    --relationships=RESULT_OF=./SN-RESULT_OF.csv \
+    --relationships=SPATIALLY_RELATED_TO=./SN-SPATIALLY_RELATED_TO.csv \
+    --relationships=SURROUNDS=./SN-SURROUNDS.csv \
+    --relationships=TEMPORALLY_RELATED_TO=./SN-TEMPORALLY_RELATED_TO.csv \
+    --relationships=TRAVERSES=./SN-TRAVERSES.csv \
+    --relationships=TREATS=./SN-TREATS.csv \
+    --relationships=TRIBUTARY_OF=./SN-TRIBUTARY_OF.csv \
+    --relationships=USES=./SN-USES.csv \
+    --relationships=SYNONYM_OF=./SYNONYM_OF.csv \
+    --relationships=UNASSIGNED=./UNASSIGNED.csv \
+    --nodes=UMLS:UMLSMetathesaurus:UMLSConcept=./UMLSConcept.csv \
+    --nodes=UMLS:UMLSMetathesaurus:UMLSLexical=./UMLSLexical.csv \
+    --nodes=UMLS:UMLSMetathesaurus:UMLSString=./UMLSString.csv \
+    --nodes=UMLS:UMLSMetathesaurus:UMLSAtom=./UMLSAtom.csv \
+    --nodes=UMLS:UMLSMetathesaurus:UMLSAttribute:UMLSDefinition=./UMLSDefinition.csv \
+    --nodes=UMLS:UMLSSemanticNetwork:UMLSSemanticType=./UMLSSemanticType.csv \
+    --nodes=UMLS:UMLSSemanticNetwork:UMLSSemanticRelation=./UMLSSemanticRelation.csv \
+    --additional-config=/var/lib/neo4j/conf/neo4j.conf
+```

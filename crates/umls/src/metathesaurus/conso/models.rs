@@ -117,6 +117,10 @@ pub enum LanguageOfTerms {
     Rus,
     /// Croatian
     Scr,
+    /// Slovak
+    Slk,
+    /// Slovenian
+    Slv,
     /// Spanish
     Spa,
     /// Swedish

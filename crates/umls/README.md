@@ -19,6 +19,8 @@ Rather than loading multi-gigabyte `.RRF` files into memory, `umls` deserializes
 | `definitions` | `MRDEF.RRF` | `DefinitionRecord` |
 | `semantic_types` | `MRSTY.RRF` | `SemanticTypeRecord` |
 | `related_concepts` | `MRREL.RRF` | `RelatedConceptRecord` |
+| `semantic_definitions` | `SRDEF` | `SemanticDefinition` |
+| `semantic_types_relations` | `SRSTRE1` | `SemanticTypeRelationship` |
 
 ## Installation
 
@@ -38,15 +40,19 @@ umls = { path = "...", features = ["debug_path"] }
 
 ## Dataset layout
 
-After extracting a UMLS release, point the library at the `META/` directory:
+After extracting a UMLS release, point the library at the `2026AA/` directory:
 
 ```text
-umls_2024AA/
-└── META/
-    ├── MRCONSO.RRF   ← concept names & source atoms
-    ├── MRDEF.RRF     ← definitions
-    ├── MRSTY.RRF     ← semantic type assignments
-    └── MRREL.RRF     ← inter-concept relationships
+2026AA/
+umls_2026/
+├── META/
+│   ├── MRCONSO.RRF   ← concept names & source atoms
+│   ├── MRDEF.RRF     ← definitions
+│   ├── MRSTY.RRF     ← semantic type assignments
+│   └── MRREL.RRF     ← inter-concept relationships
+└── NET/
+    ├── SRDEF         ← semantic types and relations
+    └── SRSTRE1       ← set of relations
 ```
 
 Access to UMLS data requires a [UMLS Metathesaurus License](https://www.nlm.nih.gov/research/umls/licensing_authentication/index.html).
@@ -62,7 +68,7 @@ use umls::UMLS;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let db = UMLS::new(PathBuf::from("/data/umls/META"));
+    let db = UMLS::new(PathBuf::from("/data/umls"));
 
     let mut concepts = db.concept_names_and_sources();
     while let Some(record) = concepts.next().await {
@@ -85,7 +91,7 @@ use std::path::PathBuf;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let db = UMLS::new(PathBuf::from("/data/umls/META"));
+    let db = UMLS::new(PathBuf::from("/data/umls"));
     let target = "C0009450"; // COVID-19
 
     let mut stream = db.semantic_types();
@@ -103,7 +109,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Run the bundled example
 
 ```bash
-cargo run --example simple -- --folder /data/umls/META
+cargo run --example simple -- --folder /data/umls
 ```
 
 ## Error handling

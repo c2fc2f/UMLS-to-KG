@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use umls::definition::models::DefinitionRecord;
+use umls::metathesaurus::definition::models::DefinitionRecord;
 
 use crate::{saver::Writer, writer};
 
@@ -22,9 +22,9 @@ impl DefinitionSaver {
         Ok(Self {
             definitions: writer!(
                 dir,
-                "UMLSAttribute",
+                "UMLSDefinition", // UMLSAttribute & UMLSMetathesaurus &UMLS
                 [
-                    "ui:ID(UMLSAttribute)",
+                    "ui:ID(UMLSDefinition)",
                     "value",
                     "source",
                     "sourceAssertedAttributeIdentifier",
@@ -33,7 +33,7 @@ impl DefinitionSaver {
             has_definition: writer!(
                 dir,
                 "HAS_DEFINITION",
-                [":START_ID(UMLS)", ":END_ID(UMLSAttribute)"]
+                [":START_ID(UMLSMetathesaurus)", ":END_ID(UMLSDefinition)"]
             ),
         })
     }

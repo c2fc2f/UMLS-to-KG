@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::conso::models::SuppressStatus;
+use crate::metathesaurus::conso::models::SuppressStatus;
 
 /// Represents a single record from the MRDEF.RRF file (Definitions).
 #[derive(Debug, Clone, Serialize, Deserialize)]

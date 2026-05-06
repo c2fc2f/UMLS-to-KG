@@ -3,7 +3,7 @@
 use clap::Parser;
 use futures::StreamExt;
 use std::{error::Error, path::PathBuf};
-use umls::{UMLS, conso::models::CoNSoRecord};
+use umls::{UMLS, metathesaurus::conso::models::CoNSoRecord};
 
 /// Simple program to test the library
 #[derive(Parser, Debug)]

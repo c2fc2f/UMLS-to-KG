@@ -3,7 +3,7 @@
 use std::path::Path;
 
 use fxhash::FxHashSet;
-use umls::conso::models::{CoNSoRecord, StringType, TermStatus};
+use umls::metathesaurus::conso::models::{CoNSoRecord, StringType, TermStatus};
 
 use crate::{saver::Writer, writer};
 
@@ -38,14 +38,22 @@ impl EntitySaver {
     /// Init a saver which creates CSV file and writes header
     pub async fn new(dir: &Path) -> std::io::Result<Self> {
         Ok(Self {
-            concepts: writer!(dir, "UMLSConcept", ["ui:ID(UMLS)",]),
-            lexicals: writer!(dir, "UMLSLexical", ["ui:ID(UMLS)",]),
-            string: writer!(dir, "UMLSString", ["ui:ID(UMLS)",]),
+            concepts: writer!(
+                dir,
+                "UMLSConcept",
+                ["ui:ID(UMLSMetathesaurus)",]
+            ),
+            lexicals: writer!(
+                dir,
+                "UMLSLexical",
+                ["ui:ID(UMLSMetathesaurus)",]
+            ),
+            string: writer!(dir, "UMLSString", ["ui:ID(UMLSMetathesaurus)",]),
             atoms: writer!(
                 dir,
                 "UMLSAtom",
                 [
-                    "ui:ID(UMLS)",
+                    "ui:ID(UMLSMetathesaurus)",
                     "value",
                     "source",
                     "sourceIdentifier",
@@ -57,17 +65,29 @@ impl EntitySaver {
             is_atom_of: writer!(
                 dir,
                 "IS_ATOM_OF",
-                [":START_ID(UMLS)", "isPreferred:boolean", ":END_ID(UMLS)"]
+                [
+                    ":START_ID(UMLSMetathesaurus)",
+                    "isPreferred:boolean",
+                    ":END_ID(UMLSMetathesaurus)"
+                ]
             ),
             is_string_of: writer!(
                 dir,
                 "IS_STRING_OF",
-                [":START_ID(UMLS)", "isPreferred:boolean", ":END_ID(UMLS)"]
+                [
+                    ":START_ID(UMLSMetathesaurus)",
+                    "isPreferred:boolean",
+                    ":END_ID(UMLSMetathesaurus)"
+                ]
             ),
             is_lexical_of: writer!(
                 dir,
                 "IS_LEXICAL_OF",
-                [":START_ID(UMLS)", "isPreferred:boolean", ":END_ID(UMLS)"]
+                [
+                    ":START_ID(UMLSMetathesaurus)",
+                    "isPreferred:boolean",
+                    ":END_ID(UMLSMetathesaurus)"
+                ]
             ),
             cuis: FxHashSet::default(),
             luis: FxHashSet::default(),

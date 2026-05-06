@@ -11,26 +11,31 @@
 //! # Dataset layout
 //!
 //! UMLS distributes its data as a collection of pipe-delimited `.RRF` files,
-//! conventionally stored under a `META/` directory after extraction. Point
-//! [`UMLS::new`] at that directory:
+//! conventionally stored under a `META/` and `NET/` directory after
+//! extraction. Point [`UMLS::new`] at that directory:
 //!
 //! ```text
-//! umls_2024AA/
-//! └── META/
-//!     ├── MRCONSO.RRF   ← concept names & source atoms
-//!     ├── MRDEF.RRF     ← definitions
-//!     ├── MRSTY.RRF     ← semantic type assignments
-//!     └── MRREL.RRF     ← inter-concept relationships
+//! umls_2026/
+//! ├── META/
+//! │   ├── MRCONSO.RRF   ← concept names & source atoms
+//! │   ├── MRDEF.RRF     ← definitions
+//! │   ├── MRSTY.RRF     ← semantic type assignments
+//! │   └── MRREL.RRF     ← inter-concept relationships
+//! └── NET/
+//!     ├── SRDEF         ← semantic types and relations
+//!     └── SRSTRE1       ← set of relations
 //! ```
 //!
 //! # Supported files
 //!
 //! | Method | File | Record type |
 //! |---|---|---|
-//! | [`UMLS::concept_names_and_sources`] | `MRCONSO.RRF` | [`conso::models::CoNSoRecord`] |
-//! | [`UMLS::definitions`] | `MRDEF.RRF` | [`definition::models::DefinitionRecord`] |
-//! | [`UMLS::semantic_types`] | `MRSTY.RRF` | [`sty::models::SemanticTypeRecord`] |
-//! | [`UMLS::related_concepts`] | `MRREL.RRF` | [`rel::models::RelatedConceptRecord`] |
+//! | [`UMLS::concept_names_and_sources`] | `MRCONSO.RRF` | [`metathesaurus::conso::models::CoNSoRecord`] |
+//! | [`UMLS::definitions`] | `MRDEF.RRF` | [`metathesaurus::definition::models::DefinitionRecord`] |
+//! | [`UMLS::semantic_types`] | `MRSTY.RRF` | [`metathesaurus::sty::models::SemanticTypeRecord`] |
+//! | [`UMLS::related_concepts`] | `MRREL.RRF` | [`metathesaurus::rel::models::RelatedConceptRecord`] |
+//! | [`UMLS::semantic_definitions`] | `SRDEF` | [`semantic_network::definition::models::SemanticDefinition`] |
+//! | [`UMLS::semantic_types_relations`] | `SRSTRE1` | [`semantic_network::relation::models::SemanticTypeRelationship`] |
 //!
 //! # Quick start
 //!
@@ -41,7 +46,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let db = UMLS::new(PathBuf::from("/data/umls/META"));
+//!     let db = UMLS::new(PathBuf::from("/data/umls"));
 //!
 //!     // Stream English concept names from MRCONSO.RRF
 //!     let mut concepts = db.concept_names_and_sources();
@@ -66,11 +71,9 @@
 //! - [`error::UMLSError::Parsing`] — a row could not be deserialized into the
 //!   target record type (malformed field count, unexpected type, etc.).
 
-pub mod conso;
-pub mod definition;
 pub mod error;
-pub mod rel;
-pub mod sty;
+pub mod metathesaurus;
+pub mod semantic_network;
 
 use std::path::PathBuf;
 
@@ -80,9 +83,15 @@ use futures::stream::{BoxStream, StreamExt};
 use tokio::fs::File;
 
 use crate::{
-    conso::models::CoNSoRecord, definition::models::DefinitionRecord,
-    error::UMLSError, rel::models::RelatedConceptRecord,
-    sty::models::SemanticTypeRecord,
+    error::UMLSError,
+    metathesaurus::{
+        conso::models::CoNSoRecord, definition::models::DefinitionRecord,
+        rel::models::RelatedConceptRecord, sty::models::SemanticTypeRecord,
+    },
+    semantic_network::{
+        definition::models::SemanticDefinition,
+        relation::models::SemanticTypeRelationship,
+    },
 };
 
 /// Represents a connection to a local UMLS dataset.
@@ -105,7 +114,7 @@ pub struct UMLS {
 /// - `$method` — The name of the generated method (e.g., `conso`).
 /// - `$record` — The record type to deserialize into (e.g., `CoNSoRecord`).
 ///   Must implement [`serde::Deserialize`].
-/// - `$filename` — The RRF filename to read from (e.g., `"MRCONSO.RRF"`).
+/// - `$path` — The RRF path to read from (e.g., `"META/MRCONSO.RRF"`).
 ///
 /// # Generated method signature
 ///
@@ -117,7 +126,7 @@ pub struct UMLS {
 ///
 /// ```rust,ignore
 /// impl UMLSDataset {
-///     rrf_stream_method!(conso, CoNSoRecord, "MRCONSO.RRF");
+///     rrf_stream_method!(conso, CoNSoRecord, "META/MRCONSO.RRF");
 /// }
 ///
 /// // Expands to:
@@ -126,12 +135,12 @@ pub struct UMLS {
 /// // }
 /// ```
 macro_rules! rrf_stream_method {
-    ($method:ident, $record:ty, $filename:literal) => {
+    ($method:ident, $record:ty, $path:literal) => {
         #[doc = concat!(
             "Returns a stream of [`",
             stringify!($record),
             "`] entries from the `",
-            $filename,
+            $path,
             "` file.\n\n",
             "This allows for flexible, lazy processing of the dataset. Each item in ",
             "the stream is a [`Result`], ensuring that I/O or parsing errors ",
@@ -139,10 +148,10 @@ macro_rules! rrf_stream_method {
         )]
         pub fn $method(&self) -> BoxStream<'_, Result<$record, UMLSError>> {
             try_stream! {
-                let path = self.folder.join($filename);
+                let path = self.folder.join($path);
                 let file = File::open(&path).await.map_err(|e| {
                     UMLSError::IO {
-                        file: $filename,
+                        file: $path,
                         source: e,
                     }
                 })?;
@@ -150,6 +159,8 @@ macro_rules! rrf_stream_method {
                 let mut reader = AsyncReaderBuilder::new()
                     .delimiter(b'|')
                     .has_headers(false)
+                    .quoting(false)
+                    .escape(None)
                     .create_deserializer(file);
 
                 let mut stream = reader.deserialize::<$record>();
@@ -157,7 +168,7 @@ macro_rules! rrf_stream_method {
                 while let Some(result) = stream.next().await {
                     let record = result.map_err(|e| {
                         UMLSError::Parsing {
-                            file: $filename,
+                            file: $path,
                             source: e,
                         }
                     })?;
@@ -175,14 +186,28 @@ impl UMLS {
     /// # Arguments
     ///
     /// * `folder` - A [`PathBuf`] representing the path to the UMLS dataset
-    ///   directory (typically the `META` folder).
+    ///   directory.
     pub fn new(folder: PathBuf) -> Self {
         Self { folder }
     }
 
-    rrf_stream_method!(concept_names_and_sources, CoNSoRecord, "MRCONSO.RRF");
-    rrf_stream_method!(definitions, DefinitionRecord, "MRDEF.RRF");
-    rrf_stream_method!(semantic_types, SemanticTypeRecord, "MRSTY.RRF");
-    rrf_stream_method!(related_concepts, RelatedConceptRecord, "MRREL.RRF");
-}
+    rrf_stream_method!(
+        concept_names_and_sources,
+        CoNSoRecord,
+        "META/MRCONSO.RRF"
+    );
+    rrf_stream_method!(definitions, DefinitionRecord, "META/MRDEF.RRF");
+    rrf_stream_method!(semantic_types, SemanticTypeRecord, "META/MRSTY.RRF");
+    rrf_stream_method!(
+        related_concepts,
+        RelatedConceptRecord,
+        "META/MRREL.RRF"
+    );
 
+    rrf_stream_method!(semantic_definitions, SemanticDefinition, "NET/SRDEF");
+    rrf_stream_method!(
+        semantic_types_relations,
+        SemanticTypeRelationship,
+        "NET/SRSTRE1"
+    );
+}
