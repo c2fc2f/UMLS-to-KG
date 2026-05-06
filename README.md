@@ -28,6 +28,8 @@ The `umls2kg` binary ties this crate together and writes the final CSV output.
 git clone https://github.com/c2fc2f/UMLS-to-KG
 cd UMLS-to-KG
 cargo build --release
+# or
+cargo install --git https://github.com/c2fc2f/UMLS-to-KG
 ```
 
 The compiled binary will be at `target/release/umls2kg`.
